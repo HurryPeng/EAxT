@@ -78,12 +78,12 @@ public class Allowed extends TabActivity
     }
     public void prepare(String caidan, int meal_num)
     {
-        ArrayList<HashMap<String,Object>> ol = wcd(caidan);
-        for (int position = 1;position < ol.size();position++)
+        ArrayList<HashMap<String,Object>> ol = wcd(caidan);//call getMenuFromString
+        for (int position = 1;position < ol.size();position++)//initialise return list
             editor.putString("Repeater1_GvReport_" + meal_num + "_TxtNum_" + (position - 1) + "@", ol.get(position).get("fs").toString() + "|");
         editor.commit();
     }
-    public ArrayList<HashMap<String,Object>> wcd(String caidan)
+    public ArrayList<HashMap<String,Object>> wcd(String caidan)//put string menu into ArrayList for ListView adaptation
     {
         ArrayList<HashMap<String,Object>> cd = new ArrayList<HashMap<String,Object>>();
         HashMap<String,Object> map;
@@ -152,7 +152,7 @@ public class Allowed extends TabActivity
     class ordermeal extends AsyncTask<Void, Void, Void>
     {
         boolean dd = true;
-        String resp = "",url = "";
+        String resp = "",urlOrder = "";
         ProgressDialog winlod = new ProgressDialog(Allowed.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
         @Override
         protected void onPreExecute()
@@ -167,10 +167,10 @@ public class Allowed extends TabActivity
         {
             try
             {
-                url = "http://gzb.szsy.cn/card/Restaurant/RestaurantUserMenu/RestaurantUserMenu.aspx?Date=" + date;
+                urlOrder = "http://gzb.szsy.cn/card/Restaurant/RestaurantUserMenu/RestaurantUserMenu.aspx?Date=" + date;
                 for (int i=0;i < 3;i++)
                 {
-                    boolean bol=fix(url, i);
+                    boolean bol=fix(urlOrder, i);
                     if(!bol)
                     {
                         dd=false; 
@@ -178,7 +178,7 @@ public class Allowed extends TabActivity
                     }
                 }
                 if(dd)
-                    resp = sendHttpRequest(url, makemap());
+                    resp = Common.sendHttpRequest(urlOrder, makemap());
             }
             catch (Exception e)
             {
@@ -206,7 +206,7 @@ public class Allowed extends TabActivity
     public boolean fix(String url, int meal_num)
     {
         String temp;
-        Boolean yun,xin;
+        boolean yun,xin;
         yun = sp.getBoolean(("y" + meal_num).toString(), false);
         xin = sp.getBoolean((meal_num + "").toString(), false);
         int i;
@@ -242,7 +242,7 @@ public class Allowed extends TabActivity
             {
                 return false;
             }
-            temp = sendHttpRequest(url, stringBuffer);
+            temp = Common.sendHttpRequest(url, stringBuffer);
             try
             {
                 Document doc = Jsoup.connect(url).get();
@@ -286,7 +286,7 @@ public class Allowed extends TabActivity
             {
                 return false;
             }
-            temp = sendHttpRequest(url, stringBuffer);
+            temp = Common.sendHttpRequest(url, stringBuffer);
             try
             {
                 Document doc = Jsoup.connect(url).get();
@@ -308,13 +308,12 @@ public class Allowed extends TabActivity
         Map<String, String> params = new HashMap<String, String>();
         params.put("__CALLBACKID", "__Page");
         String temp = "",bd = "";
-        int i = 0,j = 0;
-        for (i = 0;i < 3;i++)
+        for (int i = 0;i < 3;i++)
         {
-            if (sp.getBoolean((i + "").toString(), false))
+            if (sp.getBoolean(Integer.toString(i), false))
             {
                 params.put("Repeater1$ctl0" + i + "$CbkMealtimes", "on");
-                for (j = 0;j < 9;j++)
+                for (int j = 0;j < 9;j++)
                 {
                     temp = sp.getString("Repeater1_GvReport_" + i + "_TxtNum_" + j + "@", "");
                     if (!temp.equals(""))
@@ -322,7 +321,7 @@ public class Allowed extends TabActivity
                 }
             }
             else
-                for (j = 0;j < 9;j++)
+                for (int j = 0;j < 9;j++)
                 {
                     temp = sp.getString("Repeater1_GvReport_" + i + "_TxtNum_" + j + "@", "");
                     if (!temp.equals(""))
@@ -354,32 +353,5 @@ public class Allowed extends TabActivity
             return null;
         }
         return stringBuffer;
-    }
-    public String sendHttpRequest(String url, StringBuffer upload)
-    {
-        String ret = "";
-        StringBuffer buffer = new StringBuffer();
-        byte[] data = upload.toString().getBytes();
-        try
-        {
-            HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
-            con.setRequestMethod("POST");
-            con.setDoInput(true);
-            con.setDoOutput(true);
-            con.setConnectTimeout(5000);
-            con.connect();
-            con.getOutputStream().write(data);
-            InputStream is = con.getInputStream();
-            byte[] b = new byte[1024];
-            while (is.read(b) != -1)
-                buffer.append(new String(b));
-            ret = buffer.toString();
-            con.disconnect();
-        }
-        catch (Exception e) 
-        {
-            ret = "";
-        }
-        return ret;
     }
 }

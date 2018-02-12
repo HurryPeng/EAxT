@@ -1,14 +1,14 @@
 package org.szesmaker.ordermeal;
 import android.app.*;
 import android.content.*;
-import android.graphics.Color;
 import android.os.*;
+import android.util.Log;
 import android.view.*;
-import android.view.View.*;
 import android.widget.*;
-import android.widget.RadioGroup.*;
+
 import java.util.*;
 import android.view.View.OnClickListener;
+
 public class AllowedList extends Activity
 {
     private CheckBox ordered;
@@ -16,7 +16,6 @@ public class AllowedList extends Activity
     private int meal_num = -1, order_num = -1;
     private SharedPreferences sp;
     private SharedPreferences.Editor editor;
-    @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
@@ -88,7 +87,7 @@ public class AllowedList extends Activity
                 ordered.setChecked(true);
                 break;
         }
-        ArrayList<HashMap<String,Object>> ol = wcd(caidan);
+        ArrayList<HashMap<String,Object>> ol = getMenuFromString(caidan);
         Adpa adapter = new Adpa(this, ol);
         list.setAdapter(adapter);
         ordered.setOnClickListener(new OnClickListener()
@@ -98,7 +97,7 @@ public class AllowedList extends Activity
                 {
                     CheckBox cb = (CheckBox) v;
                     boolean check = cb.isChecked();
-                    editor.putBoolean((meal_num + "").toString(), check);
+                    editor.putBoolean(Integer.toString(meal_num), check);
                     editor.commit();
                     //Toast.makeText(ab_list.this, (meal_num + "").toString() + sp.getBoolean((meal_num + "").toString(), false), Toast.LENGTH_LONG).show();
                     //0=breakfast;1=lunch;2=dinner;
@@ -106,9 +105,10 @@ public class AllowedList extends Activity
             }
         );
     }
-    public ArrayList<HashMap<String,Object>> wcd(String caidan)
+
+    public ArrayList<HashMap<String,Object>> getMenuFromString(String menu)
     {
-        ArrayList<HashMap<String,Object>> cd = new ArrayList<HashMap<String,Object>>();
+        ArrayList<HashMap<String,Object>> cd = new ArrayList<>();
         HashMap<String,Object> map;
         String key[]={"bh","lb","cm","","","dj","zd","fs",""};
         map = new HashMap<String,Object>();
@@ -117,7 +117,7 @@ public class AllowedList extends Activity
             if (l == 0 || l == 1 || l == 2 || l == 5 || l == 6 || l == 7)
                 map.put(key[l], str[l]);
         cd.add(map);
-        String temp = caidan.substring(caidan.indexOf("0"));
+        String temp = menu.substring(menu.indexOf("0"));
         for (int i = 0;i <= 9;i++)
         {
             if (!temp.substring(0, 1).equals(i + ""))
@@ -164,10 +164,13 @@ public class AllowedList extends Activity
         }
 
         @Override
-        public long getItemId(int posotion)
+        public long getItemId(int position)
         {
             return 0;
         }
+
+
+
 
         @Override
         public View getView(int position, View convert, ViewGroup parent)
@@ -199,7 +202,7 @@ public class AllowedList extends Activity
                     else
                     {
 
-                        int numCap=ol.get(position).get("zd").toString().charAt(0)-'0';
+                        int numCap=Integer.parseInt(ol.get(position).get("zd").toString());
                         TextView numTv=(TextView) view.findViewById(R.id.fs);
                         int num=numTv.getText().charAt(0)-'0';
                         num=(num+1)%(numCap+1);
@@ -211,6 +214,12 @@ public class AllowedList extends Activity
                         map.put("fs", Integer.toString(num));
                         ol.set(position, map);
                         editor.putString("Repeater1_GvReport_" + meal_num + "_TxtNum_" + (position - 1) + "@", num + "|");
+                        /*
+                        meal_num
+                        breakfast   0
+                        lunch       1
+                        dinner      2
+                        */
                         editor.commit();
                         return;
                     }
@@ -223,11 +232,26 @@ public class AllowedList extends Activity
             viewholder.dj.setText(ol.get(position).get("dj").toString());
             viewholder.fs.setText(ol.get(position).get("fs").toString());
 
+            int id=position;
+            String type=ol.get(position).get("lb").toString();
+            String name=ol.get(position).get("cm").toString();
+            double price=Common.atof(ol.get(position).get("dj").toString());
+            int numCap=Common.atoi(ol.get(position).get("zd").toString());
+            int numOrdered=Common.atoi(ol.get(position).get("fs").toString());
+
+            Log.i("ReturnMenu", Integer.toString(meal_num));
+            Log.i("ReturnMenu", Integer.toString(id));
+            Log.i("ReturnMenu", type);
+            Log.i("ReturnMenu", name);
+            Log.i("ReturnMenu", Double.toString(price));
+            Log.i("ReturnMenu", Integer.toString(numCap));
+            Log.i("ReturnMenu", Integer.toString(numOrdered));
+
             viewholder.fs.setVisibility(View.VISIBLE);
             String num = ol.get(position).get("fs").toString();
             String top = ol.get(position).get("zd").toString();
             viewholder.fs.setText(num);
-            viewholder.fs.setTextColor(Color.parseColor("#00b0ff"));
+            viewholder.fs.setTextColor(0xFF4E6CEF);
 
             return convert;
         }
@@ -237,7 +261,6 @@ public class AllowedList extends Activity
         }
     }
     private long exittime = -2001;
-    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
         if (keyCode == KeyEvent.KEYCODE_BACK)

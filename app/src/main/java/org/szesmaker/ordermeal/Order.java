@@ -2,6 +2,7 @@ package org.szesmaker.ordermeal;
 import android.app.*;
 import android.content.*;
 import android.os.*;
+import android.util.Log;
 import android.view.*;
 import android.view.View.*;
 import android.widget.*;
@@ -15,6 +16,10 @@ public class Order extends Activity {
     private TextView dateText;
     private Button order;
     private String cardID;
+    private static final String TAG = "Order";
+
+    Document doc;
+
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.order);
@@ -22,8 +27,8 @@ public class Order extends Activity {
         dateText = (TextView) this.findViewById(R.id.textDate);
         order = (Button) this.findViewById(R.id.buttonOrder);
         Intent intent = getIntent();
-        cardID = intent.getStringExtra("cardID");
-        Document doc = Jsoup.parse(intent.getStringExtra("httpRespond"));
+        cardID = intent.getStringExtra("username");
+        doc = Jsoup.parse(intent.getStringExtra("httpResponse"));
         String name = doc.select("span#LblUserName").first().text();
         name = name.substring(name.indexOf("：") + 1);
         this.setTitle("欢迎, " + name + "同学");
@@ -60,6 +65,7 @@ public class Order extends Activity {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.addCategory(Intent.CATEGORY_HOME);
             startActivity(intent);
+            Log.d(TAG, "onKeyDown: backpushed");
             return true;
         }
         return false;
@@ -73,7 +79,8 @@ public class Order extends Activity {
     @Override public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case 1:
-                new cx().execute();
+                //new cx().execute();
+                checkBalance();
                 break;
             case 2:
                 Intent intent = new Intent();
@@ -87,15 +94,16 @@ public class Order extends Activity {
         }
         return true;
     }
+    /*
     private class cx extends AsyncTask<Void, Void, Void> {
         boolean dd = true;
         String resp = "";
-        ProgressDialog window = new ProgressDialog(Order.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
+        ProgressDialog progressDialog = new ProgressDialog(Order.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
         @Override protected void onPreExecute() {
-            window.setCancelable(false);
-            window.setProgress(ProgressDialog.STYLE_SPINNER);
-            window.setMessage("       正在查询");
-            window.show();
+            progressDialog.setCancelable(false);
+            progressDialog.setProgress(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage("       正在查询");
+            progressDialog.show();
         }
         @Override protected Void doInBackground(Void[] p1) {
             try {
@@ -114,13 +122,31 @@ public class Order extends Activity {
             return null;
         }
         @Override protected void onPostExecute(Void result) {
-            window.hide();
+            progressDialog.hide();
             if (dd)
                 Toast.makeText(Order.this, "余额" + resp, Toast.LENGTH_SHORT).show();
             else
                 Toast.makeText(Order.this, "查询失败", Toast.LENGTH_SHORT).show();
         }
     }
+    */
+
+    private void checkBalance()
+    {
+        String response = doc.toString();
+        if(response.equals(""))
+        {
+            Toast.makeText(this, "查询失败", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        else
+        {
+            Toast.makeText(this, doc.select("span#LblBalance").first().text(), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+    }
+
     private class startOrder extends AsyncTask<Void, Void, Void> {
         boolean dd = true;
         String date = "",zao = "",wuu = "",wan = "",resp = "",view = "",gen = "",event = "";
@@ -143,30 +169,49 @@ public class Order extends Activity {
                 int temp = 0;
                 if (resp != "") {
                     flag = resp.indexOf("Repeater1_Label1_0");
+                    //if flag == -1 then there's no menu for today
                     if (flag != -1) {
                         flag = resp.indexOf("value=\"+\"");
                         if (flag != -1) {
                             flag = 1;
+                            //if flag==1 then it is allowed
                             view = doc.select("input#__VIEWSTATE").first().attr("value");
                             gen = doc.select("input#__VIEWSTATEGENERATOR").first().attr("value");
                             event = doc.select("input#__EVENTVALIDATION").first().attr("value");
+                            //load the three parameters for ordering event
                         }
                         else
                             flag = 0;
+                        //if flag==0 then it is prohibited
+
+                        //???c is menu
                         Elements zaoc = doc.select("table#Repeater1_GvReport_0");
                         Elements wuuc = doc.select("table#Repeater1_GvReport_1");
-                        Elements wanc = doc.select("table#Repeater1_GvReport_2");       
+                        Elements wanc = doc.select("table#Repeater1_GvReport_2");
+
+                        //???o is ordered
                         Elements zaoo = doc.select("input#Repeater1_CbkMealtimes_0");
                         Elements wuuo = doc.select("input#Repeater1_CbkMealtimes_1");
                         Elements wano = doc.select("input#Repeater1_CbkMealtimes_2");
+                        
                         zao = zaoc.text();
+                        //编号 类别 菜名 套餐 必选 单价 最大份数 订购份数 订餐状态 0 套餐 早餐套餐 套餐   5.00 1 0   1 牛奶 学生奶     2.04 3 0   2 蛋类 鲜鸡蛋     1.40 3 0   3 牛奶 玉米面蛋糕     1.40 3 0   4 点心 橄榄香卷     1.40 3 0   5 点心 韭黄煎饼     1.40 3 0   6 点心 糯米糍     1.40 3 0   7 粉面类 汤通心粉     1.60 3 0   9 必订菜 早餐必订菜（粥、小菜）   必选 1.00 1 0           合计: 0 0 0  
+                        Log.i(TAG, "doInBackground: "+zao);
                         wuu = wuuc.text();
+                        //编号 类别 菜名 套餐 必选 单价 最大份数 订购份数 订餐状态 0 套餐 午餐套餐 套餐   12.00 1 0   1 水果 芦柑     1.30 3 0   2 菜肴 蒜茸炒麦菜     1.80 3 1 已定 3 菜肴 炒土豆丝     1.80 3 0   4 菜肴 清蒸鱼     4.40 3 1 已定 5 菜肴 油泡脆皮肠     4.40 3 1 已定 6 菜肴 红烧豆腐     3.40 3 0   7 菜肴 香辣翅根2个     6.70 3 0   9 必订菜 午餐必订菜(米饭汤)   必选 1.50 1 1 已定         合计: 12.10 0 0  
+                        Log.i(TAG, "doInBackground: "+wuu);
                         wan = wanc.text();
+                        Log.i(TAG, "doInBackground: "+wan);
+
+                        Log.i(TAG, "doInBackground: "+zaoo.toString());
+
                         editor.clear();
                         editor.commit();
+                        //if checked then order nothing
                         temp = zaoo.toString().indexOf("checked");
                         if (temp != -1) {
                             ordered += 2;
+                            //1 for digit 2
                             editor.putBoolean("0", true);
                             editor.putBoolean("y0", true);
                             editor.commit();
@@ -174,6 +219,7 @@ public class Order extends Activity {
                         temp = wuuo.toString().indexOf("checked");
                         if (temp != -1) {
                             ordered += 4;
+                            //1 for digit 3
                             editor.putBoolean("1", true);
                             editor.putBoolean("y1", true);
                             editor.commit();
@@ -181,6 +227,7 @@ public class Order extends Activity {
                         temp = wano.toString().indexOf("checked");
                         if (temp != -1) {
                             ordered += 8;
+                            //1 for digit 4
                             editor.putBoolean("2", true);
                             editor.putBoolean("y2", true);
                             editor.commit();
@@ -207,7 +254,12 @@ public class Order extends Activity {
                         Toast.makeText(Order.this, "该日无菜单", Toast.LENGTH_SHORT).show();
                         break;
                     case 0:
-                        dca.setClass(Order.this, Prohibited.class);
+                        //dca.setClass(Order.this, Prohibited.class);
+                        //startActivity(dca);
+                        dca.putExtra("view", view);
+                        dca.putExtra("gen", gen);
+                        dca.putExtra("event", event);
+                        dca.setClass(Order.this, Allowed.class);
                         startActivity(dca);
                         break;
                     case 1:
