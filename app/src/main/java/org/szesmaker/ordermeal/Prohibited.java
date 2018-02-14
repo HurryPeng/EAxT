@@ -12,9 +12,9 @@ public class Prohibited extends TabActivity
         String date,zao,wuu,wan;
         int ordered = 0;
         Intent dca = getIntent();
-        zao = dca.getStringExtra("zao");
-        wuu = dca.getStringExtra("wuu");
-        wan = dca.getStringExtra("wan");
+        zao = dca.getStringExtra("breakfast");
+        wuu = dca.getStringExtra("lunch");
+        wan = dca.getStringExtra("dinner");
         date = dca.getStringExtra("date");
         ordered = dca.getIntExtra("ordered",0);
         this.setTitle(date.substring(0,4)+"年"+date.substring(5,7)+"月"+date.substring(8)+"日菜单");
@@ -28,7 +28,7 @@ public class Prohibited extends TabActivity
             remote = new Intent();
             remote.setClass(this,ProhibitedList.class);
             remote.putExtra("flag",1);
-            remote.putExtra("zao",zao);
+            remote.putExtra("breakfast",zao);
             remote.putExtra("ordered",ordered);
             tab1.setContent(remote);
             tab1.setIndicator("早餐菜单");
@@ -39,7 +39,7 @@ public class Prohibited extends TabActivity
             remote = new Intent();
             remote.setClass(this,ProhibitedList.class);
             remote.putExtra("flag",2);
-            remote.putExtra("wuu",wuu);
+            remote.putExtra("lunch",wuu);
             remote.putExtra("ordered",ordered);
             tab2.setContent(remote);
             tab2.setIndicator("午餐菜单");
@@ -50,7 +50,7 @@ public class Prohibited extends TabActivity
             remote = new Intent();
             remote.setClass(this,ProhibitedList.class);
             remote.putExtra("flag",3);
-            remote.putExtra("wan",wan);
+            remote.putExtra("dinner",wan);
             remote.putExtra("ordered",ordered);
             tab3.setContent(remote);
             tab3.setIndicator("晚餐菜单");

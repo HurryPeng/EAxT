@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="appName">EAxT</string>
-	<string name="urlLogin">http://passport-yun.szsy.cn/login?service=http://gzb.szsy.cn/card/Default.aspx</string>
+	<string name="urlLogin" translatable="false">http://passport-yun.szsy.cn/login?service=http://gzb.szsy.cn/card/Default.aspx</string>
+	<string name="urlOrderDateless" translatable="false">http://gzb.szsy.cn/card/Restaurant/RestaurantUserMenu/RestaurantUserMenu.aspx?Date=</string>
 </resources>

@@ -23,13 +23,13 @@ public class ProhibitedList extends Activity
         switch (flag)
         {
             case 1:
-                caidan = remote.getStringExtra("zao");
+                caidan = remote.getStringExtra("breakfast");
                 break;
             case 2:
-                caidan = remote.getStringExtra("wuu");
+                caidan = remote.getStringExtra("lunch");
                 break;
             case 3:
-                caidan = remote.getStringExtra("wan");
+                caidan = remote.getStringExtra("dinner");
                 break;
         }
         switch (order)

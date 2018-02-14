@@ -24,7 +24,7 @@
 			android:screenOrientation="sensorPortrait">
 		</activity>
 		<activity
-			android:name=".Order"
+			android:name=".PickDate"
 			android:screenOrientation="sensorPortrait"
 			android:launchMode="singleTask">
 		</activity>

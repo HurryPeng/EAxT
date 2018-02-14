@@ -32,13 +32,13 @@ public class AllowedList extends Activity
         switch (flag)
         {
             case 1:
-                caidan = remote.getStringExtra("zao");
+                caidan = remote.getStringExtra("breakfast");
                 break;
             case 2:
-                caidan = remote.getStringExtra("wuu");
+                caidan = remote.getStringExtra("lunch");
                 break;
             case 3:
-                caidan = remote.getStringExtra("wan");
+                caidan = remote.getStringExtra("dinner");
                 break;
         }
         //Fake hash. To be improved.
@@ -99,7 +99,7 @@ public class AllowedList extends Activity
                     boolean check = cb.isChecked();
                     editor.putBoolean(Integer.toString(meal_num), check);
                     editor.commit();
-                    //Toast.makeText(ab_list.this, (meal_num + "").toString() + sp.getBoolean((meal_num + "").toString(), false), Toast.LENGTH_LONG).show();
+                    //Toast.makeText(ab_list.this, (meal_num + "").toString() + spOrderlist.getBoolean((meal_num + "").toString(), false), Toast.LENGTH_LONG).show();
                     //0=breakfast;1=lunch;2=dinner;
                 }
             }

@@ -1,4 +1,5 @@
 package org.szesmaker.ordermeal;
+
 import android.app.*;
 import android.content.*;
 import android.os.*;
@@ -13,12 +14,11 @@ import org.jsoup.*;
 import org.jsoup.nodes.*;
 
 public class MainActivity extends Activity {
-    private static final String TAG = "MainActivity";
     
     // UI widgets
-    private Button loginButton;
-    private EditText usernameEditText, passwordEditText;
-    private ImageView szsyImageView;
+    private Button buttonLogin;
+    private EditText editTextLogin, editTextPassword;
+    private ImageView imageViewSZSY;
 
     // SharedPreferences "code"
     private SharedPreferences spCode;
@@ -34,24 +34,24 @@ public class MainActivity extends Activity {
         setContentView(R.layout.main);
 
         // Initialise UI widgets
-        loginButton = (Button) this.findViewById(R.id.sign_in);
-        usernameEditText = (EditText) this.findViewById(R.id.username);
-        passwordEditText = (EditText) this.findViewById(R.id.password);
-        szsyImageView = (ImageView) this.findViewById(R.id.szsy);
+        buttonLogin = (Button) this.findViewById(R.id.login);
+        editTextLogin = (EditText) this.findViewById(R.id.username);
+        editTextPassword = (EditText) this.findViewById(R.id.password);
+        imageViewSZSY = (ImageView) this.findViewById(R.id.szsy);
 
         // Initialise SharedPreferences
         spCode = getSharedPreferences("code", MODE_PRIVATE);
         editorSpCode = spCode.edit();
 
         // Set initial values for EditText(s)
-        usernameEditText.setText(spCode.getString("username", ""));
+        editTextLogin.setText(spCode.getString("username", ""));
 
         if (spCode.getBoolean("savePassword", true)) {
-            passwordEditText.setText(spCode.getString("password", ""));
+            editTextPassword.setText(spCode.getString("password", ""));
         }
 
         // Setup entrance for settings page
-        szsyImageView.setOnClickListener(new OnClickListener() {
+        imageViewSZSY.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
@@ -60,8 +60,8 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Setup loginButton
-        loginButton.setOnClickListener(new OnClickListener() {
+        // Setup buttonLogin
+        buttonLogin.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
@@ -69,8 +69,8 @@ public class MainActivity extends Activity {
                                 InputMethodManager.HIDE_NOT_ALWAYS);
 
                 // Get username and password from ExitText
-                username = usernameEditText.getText().toString();
-                password = passwordEditText.getText().toString();
+                username = editTextLogin.getText().toString();
+                password = editTextPassword.getText().toString();
 
                 // Save username to SharedPreferences "code"
                 editorSpCode.putString("username", username);
@@ -79,17 +79,20 @@ public class MainActivity extends Activity {
             }
         });
     }
+
     private class Login extends AsyncTask<Void, Void, Integer> {
         // Send http request, get response and check whether it was successful
         String response = "";
         ProgressDialog progressDialog = new ProgressDialog(MainActivity.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
 
-        @Override protected void onPreExecute() {
+        @Override
+        protected void onPreExecute() {
             progressDialog.setCancelable(false);
             progressDialog.setProgress(ProgressDialog.STYLE_SPINNER);
             progressDialog.setMessage("       正在登录");
             progressDialog.show();
         }
+
         @Override
         protected Integer doInBackground(Void[] p1) {
             String passwordEncoded = Common.encodeMD5(password);
@@ -101,10 +104,11 @@ public class MainActivity extends Activity {
             CookieHandler.setDefault(cookieManager);
             CookieStore cookieStore = cookieManager.getCookieStore();
 
-            // Connect and save the response into doc in order to get the two parameters needed to post
+            // Connect and save the response into responseDoc in date_picker to get the two parameters needed to post
             try {
-                doc = Jsoup.connect("http://passport-yun.szsy.cn/login?service=http://gzb.szsy.cn/card/Default.aspx").followRedirects(true).timeout(5000).get();
-            } catch (IOException e) {
+                doc = Jsoup.connect(getString(R.string.urlLogin)).followRedirects(true).timeout(5000).get();
+            }
+            catch (IOException e) {
                 return 0;
             }
 
@@ -126,11 +130,11 @@ public class MainActivity extends Activity {
                 editorSpCode.putString("password", password);
                 editorSpCode.commit();
 
-                // Parse response and username to order page and start it
+                // Parse response and username to date_picker page and start it
                 Intent intent = new Intent();
                 intent.putExtra("httpResponse", response);
                 intent.putExtra("username", username);
-                intent.setClass(MainActivity.this, Order.class);
+                intent.setClass(MainActivity.this, PickDate.class);
                 startActivity(intent);
 
                 overridePendingTransition(R.anim.slide_out_bottom, 0);
@@ -144,19 +148,19 @@ public class MainActivity extends Activity {
         }
     }
 
-    private String post (String parameterExecution, String parameterLt, String passwordEncoded) {
-        Map<String, String> parameters = new HashMap<>(8);
+    private String post(String paramExecution, String paramLt, String passwordEncoded) {
+        Map<String, String> params = new HashMap<>(8);
 
-        parameters.put("_eventId", "submit");
-        parameters.put("captcha", "null");
-        parameters.put("code", "");
-        parameters.put("execution", parameterExecution);
-        parameters.put("lt", parameterLt);
-        parameters.put("password", passwordEncoded);
-        parameters.put("phone", "");
-        parameters.put("username", username);
+        params.put("_eventId", "submit");
+        params.put("captcha", "null");
+        params.put("code", "");
+        params.put("execution", paramExecution);
+        params.put("lt", paramLt);
+        params.put("password", passwordEncoded);
+        params.put("phone", "");
+        params.put("username", username);
 
-        return Common.sendHttpRequest(getString(R.string.urlLogin), encapsulate(parameters));
+        return Common.sendHttpRequest(getString(R.string.urlLogin), encapsulate(params));
     }
 
     private StringBuffer encapsulate(Map<String, String> parameters) {
@@ -170,7 +174,8 @@ public class MainActivity extends Activity {
                         .append("&");
             }
             buffer.deleteCharAt(buffer.length() - 1);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return null;
         }
         return buffer;
