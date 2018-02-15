@@ -1,5 +1,7 @@
 package org.szesmaker.ordermeal;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import org.jsoup.nodes.Document;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -32,7 +34,8 @@ class Common
             while (stream.read(b) != -1) buffer.append(new String(b));
             respond = buffer.toString();
             connection.disconnect();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             respond = "";
         }
         return respond;
@@ -100,48 +103,152 @@ class Common
         return result;
     }
 
-    class Menu {
-        Menu(String _date, Document doc){
-            for(int i = 0; i <= 2; i++){
+    static class Menu implements Parcelable {
+        /*
+            A Menu class that holds the menu of a whole day.
+            Can be initialised with the original web page Document.
+            Implements Parcelable so that it can be transmitted with an Intent.
+        */
+        Menu(){
+            date = null;
+            prohibited = true;
+            cost = 0;
+        }
+        Menu(String _date, boolean _prohibited, Document doc){
+            for(int i = 0; i <= 2; i++) {
                 String meal = doc.select("table#Repeater1_GvReport_" + i).text();
-                if(meal != ""){
+                if(!meal.equals("")) {
                     boolean orderNothing = doc.select("input#Repeater1_CbkMealtimes_"+i).toString().contains("checked");
                     meals.add(new Meal(meal, orderNothing));
                 }
                 else meals.add(null);
             }
-
             date = _date;
+            prohibited = _prohibited;
 
             cost = 0;
             for(Meal meal : meals) if(meal != null) if(!meal.orderNothing) cost += meal.cost;
-
             return;
         }
 
         String date;
-        ArrayList<Meal> meals;
+        boolean prohibited;
+        ArrayList<Meal> meals = new ArrayList<>();
         double cost;
 
+        void countCost() {
+            cost = 0;
+            for(Meal meal : meals) cost += meal.cost;
+            return;
+        }
         void order(int mealType, int dishId, int num){
             if(mealType < 0 || mealType > 2) return;
             Meal meal = meals.get(mealType);
             if(meal == null) return;
-            if(!meal.orderNothing) cost -= meal.cost;
             meal.order(dishId, num);
-            if(!meal.orderNothing) cost += meal.cost;
+            countCost();
             return;
         }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            if(this == null) {
+                dest.writeByte((byte)0);
+                return;
+            }
+            dest.writeByte((byte)1);
+            // The process above is used to prevent reading from a null object.
+            // Similar ones can be seen below, which will not be noted like this again.
+
+            dest.writeString(date);
+            dest.writeByte((byte)(prohibited ? 1 : 0));
+            for(Meal meal : meals){
+                if(meal == null){
+                    dest.writeByte((byte)0);
+                    continue;
+                }
+                dest.writeByte((byte)1);
+
+                dest.writeInt(meal.mealType);
+                dest.writeByte((byte)(meal.orderNothing ? 1 : 0));
+                for(Dish dish : meal.dishes){
+                    dest.writeInt(dish.id);
+                    dest.writeString(dish.type);
+                    dest.writeString(dish.name);
+                    dest.writeInt(dish.numOrdered);
+                    dest.writeInt(dish.numCap);
+                    dest.writeDouble(dish.unitPrice);
+                    dest.writeDouble(dish.cost);
+                }
+                dest.writeDouble(meal.cost);
+            }
+            dest.writeDouble(cost);
+        }
+
+        public static final Parcelable.Creator<Menu> CREATOR = new Parcelable.Creator<Menu>() {
+
+            @Override
+            public Menu createFromParcel(Parcel source) {
+                if(source.readByte() == 0) return null;
+
+                Menu menu = new Menu();
+                menu.date = source.readString();
+                menu.prohibited = (source.readByte() == 1);
+                for(int i = 0; i <= 2; i++){
+                    if(source.readByte() == 0) {
+                        menu.meals.add(null);
+                        continue;
+                    }
+
+                    Meal meal = new Meal();
+                    meal.mealType = source.readInt();
+                    meal.orderNothing = (source.readByte() == 1);
+                    for(int j = 0; j <= 9; j++) {
+                        if(j == 8) continue;// There's no dish no.8
+                        Dish dish = new Dish();
+                        dish.id = source.readInt();
+                        dish.type = source.readString();
+                        dish.name = source.readString();
+                        dish.numOrdered = source.readInt();
+                        dish.numCap = source.readInt();
+                        dish.unitPrice = source.readDouble();
+                        dish.cost = source.readDouble();
+                        meal.dishes.add(dish);
+                    }
+                    meal.cost = source.readDouble();
+                    menu.meals.add(meal);
+                }
+                menu.cost = source.readDouble();
+                return menu;
+            }
+
+            @Override
+            public Menu[] newArray(int size) {
+                // TODO Auto-generated method stub
+                return new Menu[size];
+            }
+        };
     }
 
-    class Meal {
+    static class Meal implements Parcelable {
+        Meal() {
+            mealType = 0;
+            orderNothing = true;
+            cost = 0;
+        }
         Meal(String meal, boolean _orderNothing) {
             String temp = meal.substring(meal.indexOf("0"));
             for (int i = 0; i <= 9; i++)
             {
                 if (!temp.substring(0, 1).equals(i + "")) continue;
                 Dish tempDish = new Dish();
-                int j = 0,k = 0;
+                tempDish.id = i;
+                int j = 0, k = 0;
                 for (int t = 1; t <= 8; t++)
                 {
                     j = temp.indexOf(" ", k);
@@ -200,21 +307,83 @@ class Common
 
         int mealType;
         boolean orderNothing;
-        ArrayList<Dish> dishes;
+        ArrayList<Dish> dishes = new ArrayList<>();;
         double cost;
 
+        void countCost(){
+            cost = 0;
+            for(Dish dish : dishes) cost += dish.cost;
+            return;
+        }
         void order(int dishId, int num){
             if(dishId < 0 || dishId >9) return;
             Dish dish = dishes.get(dishId);
-            cost -= dish.cost;
             dish.order(num);
-            cost += dish.cost;
+            countCost();
             return;
         }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            if(this == null){
+                dest.writeByte((byte)0);
+                return;
+            }
+            dest.writeByte((byte)1);
+            dest.writeInt(mealType);
+            dest.writeByte((byte)(orderNothing ? 1 : 0));
+            for(Dish dish : dishes) {
+                dest.writeInt(dish.id);
+                dest.writeString(dish.type);
+                dest.writeSerializable(dish.name);
+                dest.writeInt(dish.numOrdered);
+                dest.writeInt(dish.numCap);
+                dest.writeDouble(dish.unitPrice);
+                dest.writeDouble(dish.cost);
+            }
+            dest.writeDouble(cost);
+            return;
+        }
+
+        public static final Parcelable.Creator<Meal> CREATOR = new Parcelable.Creator<Meal>() {
+
+            @Override
+            public Meal createFromParcel(Parcel source) {
+                if(source.readByte() == 0) return null;
+                Meal meal = new Meal();
+                meal.mealType = source.readInt();
+                meal.orderNothing = (source.readByte() == 1);
+                for(int i = 0; i <= 9; i++) {
+                    if(i == 8) continue;// There's no dish no.8
+                    Dish dish = new Dish();
+                    dish.id = source.readInt();
+                    dish.type = source.readString();
+                    dish.name = source.readString();
+                    dish.numOrdered = source.readInt();
+                    dish.numCap = source.readInt();
+                    dish.unitPrice = source.readDouble();
+                    dish.cost = source.readDouble();
+                    meal.dishes.add(dish);
+                }
+                meal.cost = source.readDouble();
+                return meal;
+            }
+
+            @Override
+            public Meal[] newArray(int size) {
+                return new Meal[0];
+            }
+        };
     }
 
-    class Dish {
+    static class Dish {
         Dish(){
+            id = 0;
             type = null;
             name = null;
             numOrdered = 0;
@@ -223,7 +392,8 @@ class Common
             cost = 0;
             return;
         }
-        Dish(String _type, String _name, int _numOrdered, int _numCap, int _unitPrice){
+        Dish(int _id, String _type, String _name, int _numOrdered, int _numCap, int _unitPrice){
+            id = _id;
             type = _type;
             name = _name;
             numCap = _numCap;
@@ -232,6 +402,7 @@ class Common
             return;
         }
 
+        int id;
         String type;
         String name;
         int numOrdered;
@@ -239,10 +410,14 @@ class Common
         double unitPrice;
         double cost;
 
-        void order(int num){
+        void countCost() {
+            cost = unitPrice * numOrdered;
+            return;
+        }
+        void order(int num) {
             if(num < 0 || num > numCap) return;
             numOrdered = num;
-            cost = unitPrice * num;
+            countCost();
             return;
         }
     }

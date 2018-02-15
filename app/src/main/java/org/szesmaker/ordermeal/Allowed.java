@@ -42,7 +42,7 @@ public class Allowed extends TabActivity
         {
             remote = new Intent();
             remote.setClass(this, AllowedList.class);
-            remote.putExtra("flag", 1);
+            remote.putExtra("menuExists", 1);
             remote.putExtra("breakfast", zao);
             remote.putExtra("ordered", ordered);
             tab1.setContent(remote);
@@ -54,7 +54,7 @@ public class Allowed extends TabActivity
         {
             remote = new Intent();
             remote.setClass(this, AllowedList.class);
-            remote.putExtra("flag", 2);
+            remote.putExtra("menuExists", 2);
             remote.putExtra("lunch", wuu);
             remote.putExtra("ordered", ordered);
             tab2.setContent(remote);
@@ -66,7 +66,7 @@ public class Allowed extends TabActivity
         {
             remote = new Intent();
             remote.setClass(this, AllowedList.class);
-            remote.putExtra("flag", 3);
+            remote.putExtra("menuExists", 3);
             remote.putExtra("dinner", wan);
             remote.putExtra("ordered", ordered);
             tab3.setContent(remote);

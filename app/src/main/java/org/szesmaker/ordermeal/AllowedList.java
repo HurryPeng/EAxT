@@ -25,7 +25,7 @@ public class AllowedList extends Activity
         sp = getSharedPreferences("orderlist", MODE_PRIVATE);
         editor = sp.edit();
         Intent remote = getIntent();
-        int flag = remote.getIntExtra("flag", -1);
+        int flag = remote.getIntExtra("menuExists", -1);
         meal_num = flag - 1;
         int order = remote.getIntExtra("ordered", 0);
         String caidan = null;

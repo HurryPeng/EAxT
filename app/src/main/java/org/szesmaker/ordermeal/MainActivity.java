@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
     }
 
     private class Login extends AsyncTask<Void, Void, Integer> {
-        // Send http request, get response and check whether it was successful
+        // Send http request, get strResponse and check whether it was successful
         String response = "";
         ProgressDialog progressDialog = new ProgressDialog(MainActivity.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
 
@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
             CookieHandler.setDefault(cookieManager);
             CookieStore cookieStore = cookieManager.getCookieStore();
 
-            // Connect and save the response into responseDoc in date_picker to get the two parameters needed to post
+            // Connect and save the strResponse into responseDoc in date_picker to get the two parameters needed to post
             try {
                 doc = Jsoup.connect(getString(R.string.urlLogin)).followRedirects(true).timeout(5000).get();
             }
@@ -112,7 +112,7 @@ public class MainActivity extends Activity {
                 return 0;
             }
 
-            // Login and get response
+            // Login and get strResponse
             response = post(doc.select("input[name=execution]").first().attr("value"),
                     doc.select("input[name=lt]").first().attr("value"),
                     passwordEncoded);
@@ -130,7 +130,7 @@ public class MainActivity extends Activity {
                 editorSpCode.putString("password", password);
                 editorSpCode.commit();
 
-                // Parse response and username to date_picker page and start it
+                // Parse strResponse and username to date_picker page and start it
                 Intent intent = new Intent();
                 intent.putExtra("httpResponse", response);
                 intent.putExtra("username", username);
