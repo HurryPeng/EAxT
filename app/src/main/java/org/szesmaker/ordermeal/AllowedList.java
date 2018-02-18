@@ -202,11 +202,11 @@ public class AllowedList extends Activity
                     else
                     {
 
-                        int numCap=Integer.parseInt(ol.get(position).get("zd").toString());
-                        TextView numTv=(TextView) view.findViewById(R.id.fs);
-                        int num=numTv.getText().charAt(0)-'0';
-                        num=(num+1)%(numCap+1);
-                        numTv.setText(""+num);
+                        int numCap = Integer.parseInt(ol.get(position).get("zd").toString());
+                        TextView numTv = (TextView) view.findViewById(R.id.fs);
+                        int num = numTv.getText().charAt(0)-'0';
+                        num = (num + 1) % (numCap + 1);
+                        numTv.setText(String.format(Locale.CHINA, "%d", num));
 
                         //Keep state in ol updated
                         HashMap<String,Object> map = new HashMap<String,Object>();

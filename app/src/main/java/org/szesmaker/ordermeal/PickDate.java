@@ -23,6 +23,9 @@ public class PickDate extends Activity {
     Document responseDoc;
     String dateSelected;
 
+    SharedPreferences spMenu;
+    SharedPreferences.Editor spMenuEditor;
+
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.date_picker);
@@ -30,6 +33,9 @@ public class PickDate extends Activity {
         // Initialise UI widgets
         datePicker = (DatePicker) this.findViewById(R.id.dp);
         buttonLoad = (Button) this.findViewById(R.id.buttonOrder);
+
+        spMenu = getSharedPreferences("menu", MODE_PRIVATE);
+        spMenuEditor = spMenu.edit();
 
         // Receive intent, get username and Chinese name and set it to display
         Intent intentReceived = getIntent();
@@ -162,7 +168,9 @@ public class PickDate extends Activity {
                 }
                 else {
                     Intent intentToSend = new Intent();
-                    intentToSend.putExtra("menu", menu);
+                    intentToSend.putExtra("date", menu.date);// Pass date to the next activity as a key to find menu of the day in spMenu
+                    spMenuEditor.putString(menu.date, menu.serialize());
+                    spMenuEditor.commit();
                     if(menu.prohibited) {
                         intentToSend.setClass(PickDate.this, Prohibited.class);
                         startActivity(intentToSend);

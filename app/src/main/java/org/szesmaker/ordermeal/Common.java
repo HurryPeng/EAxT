@@ -2,8 +2,17 @@ package org.szesmaker.ordermeal;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
+
 import org.jsoup.nodes.Document;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -103,154 +112,116 @@ class Common
         return result;
     }
 
-    static class Menu implements Parcelable {
-        /*
-            A Menu class that holds the menu of a whole day.
-            Can be initialised with the original web page Document.
-            Implements Parcelable so that it can be transmitted with an Intent.
-        */
-        Menu(){
+    static class Menu implements Serializable {
+
+        Menu() {
             date = null;
             prohibited = true;
+            meals = new Meal[3];
             cost = 0;
+            return;
         }
-        Menu(String _date, boolean _prohibited, Document doc){
+        Menu(String _date, boolean _prohibited, Document doc) {
+            date = _date;
+            prohibited = _prohibited;
+            meals = new Meal[3];
             for(int i = 0; i <= 2; i++) {
                 String meal = doc.select("table#Repeater1_GvReport_" + i).text();
                 if(!meal.equals("")) {
                     boolean orderNothing = doc.select("input#Repeater1_CbkMealtimes_"+i).toString().contains("checked");
-                    meals.add(new Meal(meal, orderNothing));
+                    meals[i] = new Meal(meal, orderNothing);
                 }
-                else meals.add(null);
+                else meals[i] = null;
             }
-            date = _date;
-            prohibited = _prohibited;
-
             cost = 0;
             for(Meal meal : meals) if(meal != null) if(!meal.orderNothing) cost += meal.cost;
             return;
         }
+        Menu(String serialized) {
+            this();
+            try {
+                byte bytes[] = new byte[serialized.length()];
+                for(int i = 0; i < serialized.length(); i++) bytes[i] = (byte) serialized.codePointAt(i);
+                ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+                Menu menu = (Menu) ois.readObject();
+                date = menu.date;
+                prohibited = menu.prohibited;
+                meals = menu.meals;
+                cost = menu.cost;
+                return;
+            }
+            catch(Exception e) {
+                return;
+            }
+        }
 
         String date;
         boolean prohibited;
-        ArrayList<Meal> meals = new ArrayList<>();
+        Meal meals[];
         double cost;
+
+        private static final long serialVersionUID = 1L;
 
         void countCost() {
             cost = 0;
-            for(Meal meal : meals) cost += meal.cost;
+            for(Meal meal : meals) if(meal != null) cost += meal.cost;
             return;
         }
-        void order(int mealType, int dishId, int num){
+        void order(int mealType, int dishId, int num) {
             if(mealType < 0 || mealType > 2) return;
-            Meal meal = meals.get(mealType);
+            Meal meal = meals[mealType];
             if(meal == null) return;
             meal.order(dishId, num);
             countCost();
             return;
         }
 
-        @Override
-        public int describeContents() {
-            return 0;
+        public String toString() {
+            String str = date + " " + prohibited + "\n";
+            for(Meal meal :meals) {
+                if(meal == null) str += "nullMeal\n";
+                else str += "    " + meal.toString();
+            }
+            str += cost + "\n";
+            return str;
         }
 
-        @Override
-        public void writeToParcel(Parcel dest, int flags) {
-            if(this == null) {
-                dest.writeByte((byte)0);
-                return;
+        String serialize() {
+            try {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(this);
+                oos.close();
+                byte bytes[] = baos.toByteArray();
+                String str = "";
+                for(byte b : bytes) str += (char) b;
+                return str;
             }
-            dest.writeByte((byte)1);
-            // The process above is used to prevent reading from a null object.
-            // Similar ones can be seen below, which will not be noted like this again.
-
-            dest.writeString(date);
-            dest.writeByte((byte)(prohibited ? 1 : 0));
-            for(Meal meal : meals){
-                if(meal == null){
-                    dest.writeByte((byte)0);
-                    continue;
-                }
-                dest.writeByte((byte)1);
-
-                dest.writeInt(meal.mealType);
-                dest.writeByte((byte)(meal.orderNothing ? 1 : 0));
-                for(Dish dish : meal.dishes){
-                    dest.writeInt(dish.id);
-                    dest.writeString(dish.type);
-                    dest.writeString(dish.name);
-                    dest.writeInt(dish.numOrdered);
-                    dest.writeInt(dish.numCap);
-                    dest.writeDouble(dish.unitPrice);
-                    dest.writeDouble(dish.cost);
-                }
-                dest.writeDouble(meal.cost);
+            catch (Exception e) {
+                Log.d("TAG", "serialize: "+e.toString());
+                return "";
             }
-            dest.writeDouble(cost);
         }
-
-        public static final Parcelable.Creator<Menu> CREATOR = new Parcelable.Creator<Menu>() {
-
-            @Override
-            public Menu createFromParcel(Parcel source) {
-                if(source.readByte() == 0) return null;
-
-                Menu menu = new Menu();
-                menu.date = source.readString();
-                menu.prohibited = (source.readByte() == 1);
-                for(int i = 0; i <= 2; i++){
-                    if(source.readByte() == 0) {
-                        menu.meals.add(null);
-                        continue;
-                    }
-
-                    Meal meal = new Meal();
-                    meal.mealType = source.readInt();
-                    meal.orderNothing = (source.readByte() == 1);
-                    for(int j = 0; j <= 9; j++) {
-                        if(j == 8) continue;// There's no dish no.8
-                        Dish dish = new Dish();
-                        dish.id = source.readInt();
-                        dish.type = source.readString();
-                        dish.name = source.readString();
-                        dish.numOrdered = source.readInt();
-                        dish.numCap = source.readInt();
-                        dish.unitPrice = source.readDouble();
-                        dish.cost = source.readDouble();
-                        meal.dishes.add(dish);
-                    }
-                    meal.cost = source.readDouble();
-                    menu.meals.add(meal);
-                }
-                menu.cost = source.readDouble();
-                return menu;
-            }
-
-            @Override
-            public Menu[] newArray(int size) {
-                // TODO Auto-generated method stub
-                return new Menu[size];
-            }
-        };
     }
 
-    static class Meal implements Parcelable {
+    static class Meal implements Serializable {
+
         Meal() {
             mealType = 0;
             orderNothing = true;
+            dishes = new Dish[9];
             cost = 0;
         }
-        Meal(String meal, boolean _orderNothing) {
-            String temp = meal.substring(meal.indexOf("0"));
-            for (int i = 0; i <= 9; i++)
-            {
+        Meal(String _meal, boolean _orderNothing) {
+            String temp = _meal.substring(_meal.indexOf("0"));
+            int arrayIndex = 0;
+            dishes = new Dish[9];
+            for (int i = 0; i <= 9; i++) {
                 if (!temp.substring(0, 1).equals(i + "")) continue;
                 Dish tempDish = new Dish();
                 tempDish.id = i;
                 int j = 0, k = 0;
-                for (int t = 1; t <= 8; t++)
-                {
+                for (int t = 1; t <= 8; t++) {
                     j = temp.indexOf(" ", k);
                     k = temp.indexOf(" ", j + 2);
                     String item = temp.substring(j + 1, k);
@@ -277,7 +248,7 @@ class Common
                     }
                 }
                 temp = temp.substring(k + 1);
-                dishes.add(tempDish);
+                dishes[arrayIndex++] = tempDish;
             }
 
             orderNothing = _orderNothing;
@@ -286,7 +257,7 @@ class Common
             for(Dish dish : dishes) cost += dish.cost;
 
             String setMeal;
-            setMeal = dishes.get(0).name;
+            setMeal = dishes[0].name;
             switch (setMeal){
                 case "早餐套餐": {
                     mealType = 0;
@@ -307,82 +278,39 @@ class Common
 
         int mealType;
         boolean orderNothing;
-        ArrayList<Dish> dishes = new ArrayList<>();;
+        Dish dishes[];
         double cost;
 
-        void countCost(){
+        private static final long serialVersionUID = 1L;
+
+        void countCost() {
             cost = 0;
+            if(orderNothing) return;
             for(Dish dish : dishes) cost += dish.cost;
             return;
         }
-        void order(int dishId, int num){
+        void order(int dishId, int num) {
             if(dishId < 0 || dishId >9) return;
-            Dish dish = dishes.get(dishId);
+            Dish dish = dishes[dishId];
             dish.order(num);
             countCost();
             return;
         }
 
-        @Override
-        public int describeContents() {
-            return 0;
-        }
-
-        @Override
-        public void writeToParcel(Parcel dest, int flags) {
-            if(this == null){
-                dest.writeByte((byte)0);
-                return;
-            }
-            dest.writeByte((byte)1);
-            dest.writeInt(mealType);
-            dest.writeByte((byte)(orderNothing ? 1 : 0));
+        public String toString() {
+            String str = mealType + " " + orderNothing + "\n";
             for(Dish dish : dishes) {
-                dest.writeInt(dish.id);
-                dest.writeString(dish.type);
-                dest.writeSerializable(dish.name);
-                dest.writeInt(dish.numOrdered);
-                dest.writeInt(dish.numCap);
-                dest.writeDouble(dish.unitPrice);
-                dest.writeDouble(dish.cost);
+                if(dish == null) str += "nullDish\n";
+                else str += "    " + dish.toString();
             }
-            dest.writeDouble(cost);
-            return;
+            str += cost + "\n";
+            return str;
         }
-
-        public static final Parcelable.Creator<Meal> CREATOR = new Parcelable.Creator<Meal>() {
-
-            @Override
-            public Meal createFromParcel(Parcel source) {
-                if(source.readByte() == 0) return null;
-                Meal meal = new Meal();
-                meal.mealType = source.readInt();
-                meal.orderNothing = (source.readByte() == 1);
-                for(int i = 0; i <= 9; i++) {
-                    if(i == 8) continue;// There's no dish no.8
-                    Dish dish = new Dish();
-                    dish.id = source.readInt();
-                    dish.type = source.readString();
-                    dish.name = source.readString();
-                    dish.numOrdered = source.readInt();
-                    dish.numCap = source.readInt();
-                    dish.unitPrice = source.readDouble();
-                    dish.cost = source.readDouble();
-                    meal.dishes.add(dish);
-                }
-                meal.cost = source.readDouble();
-                return meal;
-            }
-
-            @Override
-            public Meal[] newArray(int size) {
-                return new Meal[0];
-            }
-        };
     }
 
-    static class Dish {
-        Dish(){
+    static class Dish implements Serializable {
+
+        Dish() {
             id = 0;
             type = null;
             name = null;
@@ -392,7 +320,7 @@ class Common
             cost = 0;
             return;
         }
-        Dish(int _id, String _type, String _name, int _numOrdered, int _numCap, int _unitPrice){
+        Dish(int _id, String _type, String _name, int _numOrdered, int _numCap, int _unitPrice) {
             id = _id;
             type = _type;
             name = _name;
@@ -410,6 +338,8 @@ class Common
         double unitPrice;
         double cost;
 
+        private static final long serialVersionUID = 1L;
+
         void countCost() {
             cost = unitPrice * numOrdered;
             return;
@@ -419,6 +349,10 @@ class Common
             numOrdered = num;
             countCost();
             return;
+        }
+
+        public String toString() {
+            return id + " " + type + " " + name + " " +numOrdered + " " + numCap + " " + unitPrice + " " + cost + "\n";
         }
     }
 }

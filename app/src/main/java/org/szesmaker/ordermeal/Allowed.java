@@ -3,6 +3,7 @@ import android.app.*;
 import android.content.*;
 import android.os.*;
 import android.view.*;
+import android.view.Menu;
 import android.widget.*;
 import java.io.*;
 import java.lang.reflect.*;
@@ -115,6 +116,7 @@ public class Allowed extends TabActivity
         }
         return cd;
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
@@ -167,7 +169,7 @@ public class Allowed extends TabActivity
         {
             try
             {
-                urlOrder = "http://gzb.szsy.cn/card/Restaurant/RestaurantUserMenu/RestaurantUserMenu.aspx?Date=" + date;
+                urlOrder = getString(R.string.urlOrderDateless) + date;
                 for (int i=0;i < 3;i++)
                 {
                     boolean bol=fix(urlOrder, i);
@@ -219,13 +221,13 @@ public class Allowed extends TabActivity
                 if (sp.getBoolean((i + "").toString(), false))
                     params.put("Repeater1$ctl0" + i + "$CbkMealtimes", "on");
             params.put("__EVENTARGUMENT", "");
-            params.put("__EVENTTARGET", "Repeater1$ctl0" + meal_num + "$CbkMealtimes");
+            params.put("__EVENTTARGET", "Repeater1$ctl0" + meal_num + "$CbkMealtimes");// this one extra
             params.put("__EVENTVALIDATION", event);
             params.put("__LASTFOCUS", "");
             params.put("__VIEWSTATEENCRYPTED", "");
             params.put("__VIEWSTATEGENERATOR", gen);
             params.put("DrplstRestaurantBasis1$DrplstControl", "4d05282b-b96f-4a3f-ba54-fc218266a524");
-            params.put("Repeater1$ctl0" + meal_num + "$CbkMealtimes", "on");
+            params.put("Repeater1$ctl0" + meal_num + "$CbkMealtimes", "on"); //!!!!!!!!!!!!!!!!!
             try
             {
                 for (Map.Entry<String, String> entry : params.entrySet())
@@ -242,6 +244,8 @@ public class Allowed extends TabActivity
             {
                 return false;
             }
+            // the followings are extra ???
+            // re-get new generated params
             temp = Common.sendHttpRequest(url, stringBuffer);
             try
             {
@@ -264,7 +268,7 @@ public class Allowed extends TabActivity
                 if (sp.getBoolean((i + "").toString(), false))
                     params.put("Repeater1$ctl0" + i + "$CbkMealtimes", "on");
             params.put("__EVENTARGUMENT", "");
-            params.put("__EVENTTARGET", "Repeater1$ctl0" + meal_num + "$CbkMealtimes");
+            params.put("__EVENTTARGET", "Repeater1$ctl0" + meal_num + "$CbkMealtimes"); // this one extra
             params.put("__EVENTVALIDATION", event);
             params.put("__LASTFOCUS", "");
             params.put("__VIEWSTATEENCRYPTED", "");
@@ -328,7 +332,7 @@ public class Allowed extends TabActivity
                         bd = bd + "Repeater1_GvReport_" + i + "_TxtNum_" + j + "@" + temp;
                 }
         }
-        params.put("__CALLBACKPARAM", bd);
+        params.put("__CALLBACKPARAM", bd); // this one is extra
         params.put("__EVENTARGUMENT", "");
         params.put("__EVENTTARGET", "");
         params.put("__EVENTVALIDATION", event);
@@ -346,7 +350,10 @@ public class Allowed extends TabActivity
                     .append(URLEncoder.encode(entry.getValue(), encode))
                     .append("&");
             }
-            stringBuffer.append(URLEncoder.encode("__VIEWSTATE", encode)).append("=").append(URLEncoder.encode(view, encode));
+            stringBuffer
+                    .append(URLEncoder.encode("__VIEWSTATE", encode))
+                    .append("=")
+                    .append(URLEncoder.encode(view, encode));
         }
         catch (Exception e)
         {

@@ -17,7 +17,7 @@ public class ProhibitedList extends Activity {
         ordered = (CheckBox) this.findViewById(R.id.ordered);
         list = (ListView) this.findViewById(R.id.list);
         Intent remote = getIntent();
-        Common.Meal meal = remote.getParcelableExtra("meal");
+        Common.Meal meal = (Common.Meal) remote.getSerializableExtra("meal");
         ordered.setChecked(true);//To be improved
         ordered.setClickable(false);
 
@@ -33,11 +33,10 @@ public class ProhibitedList extends Activity {
 
         for(Common.Dish dish : meal.dishes) {
             HashMap<String, Object> map = new HashMap<>();
-            if(dish == null)  Log.d("TAG", "onCreate: nulldish!~");
             map.put("bh", dish.id);
             map.put("lb", dish.type);
             map.put("cm", dish.name);
-            map.put("dj", dish.unitPrice);
+            map.put("dj", String.format(Locale.CHINA, "%.2f", dish.unitPrice));
             map.put("dg", dish.numOrdered);
             ol.add(map);
         }
