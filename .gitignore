@@ -11,5 +11,3 @@ gradlew*
 /app/build/
 /app/src/androidTest/
 /app/src/test/
-/app/build.gradle
-build.gradle
