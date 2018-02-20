@@ -1,6 +1,7 @@
 package org.szesmaker.ordermeal;
 import android.app.*;
 import android.content.*;
+import android.content.res.Configuration;
 import android.os.*;
 import android.widget.*;
 import java.util.*;
@@ -8,6 +9,10 @@ public class ProhibitedList extends Activity
 {
     private CheckBox ordered;
     private ListView list;
+
+    SimpleAdapter adapterPortrait;
+    SimpleAdapter adapterLandscape;
+
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -78,14 +83,33 @@ public class ProhibitedList extends Activity
         }
         ordered.setClickable(false);
         ArrayList<HashMap<String,Object>> ol = wcd(caidan);
-        SimpleAdapter sap = new SimpleAdapter(this, ol, R.layout.listitem, new String[] { "bh","lb","cm","dj","dg"}, new int[] {R.id.bh, R.id.lb,R.id.cm,R.id.dj,R.id.fs});
-        list.setAdapter(sap);
+        adapterLandscape = new SimpleAdapter(this, ol, R.layout.listitem, new String[] { "bh","lb","cm","dj","fs"}, new int[] {R.id.bh, R.id.lb,R.id.cm,R.id.dj,R.id.fs});
+        adapterPortrait = new SimpleAdapter(this, ol, R.layout.listitem, new String[] {"bh", "cm", "dj", "fs"}, new int[] {R.id.bh,R.id.cm, R.id.dj, R.id.fs});
+        Configuration config = getResources().getConfiguration();
+        if(config.orientation == Configuration.ORIENTATION_PORTRAIT) list.setAdapter(adapterPortrait);
+        else list.setAdapter(adapterLandscape);
     }
+
+    @Override
+    public void onConfigurationChanged(Configuration config) {
+        super.onConfigurationChanged(config);
+        switch(config.orientation) {
+            case Configuration.ORIENTATION_PORTRAIT: {
+                list.setAdapter(adapterPortrait);
+                break;
+            }
+            case Configuration.ORIENTATION_LANDSCAPE: {
+                list.setAdapter(adapterLandscape);
+                break;
+            }
+        }
+    }
+
     public ArrayList<HashMap<String,Object>> wcd(String caidan)
     {
         ArrayList<HashMap<String,Object>> cd = new ArrayList<HashMap<String,Object>>();
         HashMap<String,Object> map;
-        String key[]={"bh","lb","cm","","","dj","zd","dg",""};
+        String key[]={"bh","lb","cm","","","dj","zd","fs",""};
         map = new HashMap<String,Object>();
         String str[]={"编号","类别","菜名","","","单价","最大份数","份数",""};
         for (int l = 0;l < 9;l++)

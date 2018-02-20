@@ -1,14 +1,13 @@
 package org.szesmaker.ordermeal;
+
 import android.app.*;
 import android.content.*;
-import android.graphics.Color;
+import android.content.res.Configuration;
 import android.os.*;
 import android.view.*;
-import android.view.View.*;
 import android.widget.*;
-import android.widget.RadioGroup.*;
 import java.util.*;
-import android.view.View.OnClickListener;
+
 public class AllowedList extends Activity
 {
     private CheckBox ordered;
@@ -16,6 +15,10 @@ public class AllowedList extends Activity
     private int meal_num = -1, order_num = -1;
     private SharedPreferences sp;
     private SharedPreferences.Editor editor;
+
+    Adpa adapterPortrait;
+    Adpa adapterLandscape;
+
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -88,24 +91,30 @@ public class AllowedList extends Activity
                 ordered.setChecked(true);
                 break;
         }
+
         ArrayList<HashMap<String,Object>> ol = wcd(caidan);
-        Adpa adapter = new Adpa(this, ol);
-        list.setAdapter(adapter);
-        ordered.setOnClickListener(new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    CheckBox cb = (CheckBox) v;
-                    boolean check = cb.isChecked();
-                    editor.putBoolean((meal_num + "").toString(), check);
-                    editor.commit();
-                    //Toast.makeText(ab_list.this, (meal_num + "").toString() + sp.getBoolean((meal_num + "").toString(), false), Toast.LENGTH_LONG).show();
-                    //0=breakfast;1=lunch;2=dinner;
-                }
-            }
-        );
+        adapterPortrait = new Adpa(this, ol, Configuration.ORIENTATION_PORTRAIT);
+        adapterLandscape = new Adpa(this, ol, Configuration.ORIENTATION_LANDSCAPE);
+        Configuration config = getResources().getConfiguration();
+        if(config.orientation == Configuration.ORIENTATION_PORTRAIT) list.setAdapter(adapterPortrait);
+        else list.setAdapter(adapterLandscape);
     }
+
+    @Override
+    public void onConfigurationChanged(Configuration config) {
+        super.onConfigurationChanged(config);
+        switch(config.orientation) {
+            case Configuration.ORIENTATION_PORTRAIT: {
+                list.setAdapter(adapterPortrait);
+                break;
+            }
+            case Configuration.ORIENTATION_LANDSCAPE: {
+                list.setAdapter(adapterLandscape);
+                break;
+            }
+        }
+    }
+
     public ArrayList<HashMap<String,Object>> wcd(String caidan)
     {
         ArrayList<HashMap<String,Object>> cd = new ArrayList<HashMap<String,Object>>();
@@ -144,11 +153,13 @@ public class AllowedList extends Activity
     {
         Context context;
         ArrayList<HashMap<String,Object>> ol;
+        int orientation;
 
-        public Adpa(Context context, ArrayList<HashMap<String,Object>> ol)
+        public Adpa(Context context, ArrayList<HashMap<String,Object>> ol, int orientation)
         {
             this.context = context;
-            this.ol = ol;   
+            this.ol = ol;
+            this.orientation = orientation;
         }
 
         @Override
@@ -179,7 +190,9 @@ public class AllowedList extends Activity
                 viewholder = new ViewHolder();
                 convert = LayoutInflater.from(context).inflate(R.layout.listitem, null);
                 viewholder.bh = (TextView) convert.findViewById(R.id.bh);
-                viewholder.lb = (TextView) convert.findViewById(R.id.lb);
+                if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    viewholder.lb = (TextView) convert.findViewById(R.id.lb);
+                }
                 viewholder.cm = (TextView) convert.findViewById(R.id.cm);
                 viewholder.dj = (TextView) convert.findViewById(R.id.dj);
                 viewholder.fs = (TextView) convert.findViewById(R.id.fs);
@@ -195,30 +208,32 @@ public class AllowedList extends Activity
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id)
                 {
-                    if(position==0) return;
+                    if(position == 0) return;
                     else
                     {
 
                         int numCap=ol.get(position).get("zd").toString().charAt(0)-'0';
-                        TextView numTv=(TextView) view.findViewById(R.id.fs);
+                        TextView numTv = view.findViewById(R.id.fs);
                         int num=numTv.getText().charAt(0)-'0';
                         num=(num+1)%(numCap+1);
-                        numTv.setText(""+num);
+                        numTv.setText(String.valueOf(num));
 
                         //Keep state in ol updated
-                        HashMap<String,Object> map = new HashMap<String,Object>();
+                        HashMap<String,Object> map;
                         map = ol.get(position);
                         map.put("fs", Integer.toString(num));
                         ol.set(position, map);
                         editor.putString("Repeater1_GvReport_" + meal_num + "_TxtNum_" + (position - 1) + "@", num + "|");
-                        editor.commit();
+                        editor.apply();
                         return;
                     }
                 }
             });
 
             viewholder.bh.setText(ol.get(position).get("bh").toString());
-            viewholder.lb.setText(ol.get(position).get("lb").toString());
+            if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                viewholder.lb.setText(ol.get(position).get("lb").toString());
+            }
             viewholder.cm.setText(ol.get(position).get("cm").toString());
             viewholder.dj.setText(ol.get(position).get("dj").toString());
             viewholder.fs.setText(ol.get(position).get("fs").toString());
@@ -227,7 +242,7 @@ public class AllowedList extends Activity
             String num = ol.get(position).get("fs").toString();
             String top = ol.get(position).get("zd").toString();
             viewholder.fs.setText(num);
-            viewholder.fs.setTextColor(Color.parseColor("#00b0ff"));
+            viewholder.fs.setTextColor(0xff00b0ff);
 
             return convert;
         }
