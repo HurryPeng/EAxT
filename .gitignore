@@ -1,13 +1,1 @@
-/.gradle/
-/.idea/
-/build/
-/captures/
-/gradle/
-gradlew*
-*.iml
-*.properties
-.DS_Store
-.externalNativeBuild
 /app/build/
-/app/src/androidTest/
-/app/src/test/
