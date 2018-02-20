@@ -235,9 +235,9 @@ public class AllowedList extends Activity
             int id=position;
             String type=ol.get(position).get("lb").toString();
             String name=ol.get(position).get("cm").toString();
-            double price=Common.atof(ol.get(position).get("dj").toString());
-            int numCap=Common.atoi(ol.get(position).get("zd").toString());
-            int numOrdered=Common.atoi(ol.get(position).get("fs").toString());
+            double price=Double.valueOf(ol.get(position).get("dj").toString());
+            int numCap=Integer.valueOf(ol.get(position).get("zd").toString());
+            int numOrdered=Integer.valueOf(ol.get(position).get("fs").toString());
 
             Log.i("ReturnMenu", Integer.toString(meal_num));
             Log.i("ReturnMenu", Integer.toString(id));

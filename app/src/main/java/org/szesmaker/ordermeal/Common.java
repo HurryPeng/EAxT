@@ -74,44 +74,6 @@ class Common
         return str;
     }
 
-    static int atoi(String str) {
-        /*
-            Turn String into int.
-            This function is written due to the exceptions that Integer.parseInt() throws.
-            The function is named after a C function with the same name.
-        */
-        int result = 0;
-        for(int i = 0; i < str.length(); i++) {
-            result += str.charAt(i) - '0';
-            result *= 10;
-        }
-        result /= 10;
-        return result;
-    }
-
-    static double atof(String str) {
-        /*
-            Turn String into double.
-            This function is written due to the exceptions that Double.parseDouble() throws.
-            The function is named after a C function with the same name.
-        */
-        double result = 0;
-        double decimal = 0;
-        int l = str.length();
-        int dotPosition = 0;
-        for(int i = 0; i < l; i++) {
-            if(str.charAt(i) == '.') {
-                dotPosition = i;
-                break;
-            }
-        }
-        result += atoi(str.substring(0, dotPosition));
-        decimal = atoi(str.substring(dotPosition + 1, l));
-        for(int i = 1; i <= l - (dotPosition + 1); i++) decimal /= 10;
-        result += decimal;
-        return result;
-    }
-
     static class Menu implements Serializable {
 
         Menu() {
@@ -121,9 +83,9 @@ class Common
             cost = 0;
             return;
         }
-        Menu(String _date, boolean _prohibited, Document doc) {
-            date = _date;
-            prohibited = _prohibited;
+        Menu(String date, boolean prohibited, Document doc) {
+            this.date = date;
+            this.prohibited = prohibited;
             meals = new Meal[3];
             for(int i = 0; i <= 2; i++) {
                 String meal = doc.select("table#Repeater1_GvReport_" + i).text();
@@ -212,8 +174,8 @@ class Common
             dishes = new Dish[9];
             cost = 0;
         }
-        Meal(String _meal, boolean _orderNothing) {
-            String temp = _meal.substring(_meal.indexOf("0"));
+        Meal(String meal, boolean orderNothing) {
+            String temp = meal.substring(meal.indexOf("0"));
             int arrayIndex = 0;
             dishes = new Dish[9];
             for (int i = 0; i <= 9; i++) {
@@ -235,15 +197,15 @@ class Common
                             break;
                         }
                         case 5: {
-                            tempDish.unitPrice = atof(item);
+                            tempDish.unitPrice = Double.valueOf(item);
                             break;
                         }
                         case 6: {
-                            tempDish.numCap = atoi(item);
+                            tempDish.numCap = Integer.valueOf(item);
                             break;
                         }
                         case 7: {
-                            tempDish.order(atoi(item));
+                            tempDish.order(Integer.valueOf(item));
                         }
                     }
                 }
@@ -251,7 +213,7 @@ class Common
                 dishes[arrayIndex++] = tempDish;
             }
 
-            orderNothing = _orderNothing;
+            this.orderNothing = orderNothing;
 
             cost = 0;
             for(Dish dish : dishes) cost += dish.cost;
@@ -320,13 +282,13 @@ class Common
             cost = 0;
             return;
         }
-        Dish(int _id, String _type, String _name, int _numOrdered, int _numCap, int _unitPrice) {
-            id = _id;
-            type = _type;
-            name = _name;
-            numCap = _numCap;
-            unitPrice = _unitPrice;
-            order(_numOrdered);
+        Dish(int id, String type, String name, int numOrdered, int numCap, int unitPrice) {
+            this.id = id;
+            this.type = type;
+            this.name = name;
+            this.numCap = numCap;
+            this.unitPrice = unitPrice;
+            order(numOrdered);
             return;
         }
 
