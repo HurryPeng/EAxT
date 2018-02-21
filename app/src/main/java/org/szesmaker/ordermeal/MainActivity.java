@@ -3,6 +3,7 @@ package org.szesmaker.ordermeal;
 import android.app.*;
 import android.content.*;
 import android.os.*;
+import android.util.Log;
 import android.view.*;
 import android.view.View.*;
 import android.view.inputmethod.*;
@@ -28,6 +29,9 @@ public class MainActivity extends Activity {
     private String username;
     private String password;
 
+    // Request code
+    static final int ACTIVITY_PICKDATE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +52,7 @@ public class MainActivity extends Activity {
 
         if (spCode.getBoolean("savePassword", true)) {
             editTextPassword.setText(spCode.getString("password", ""));
+            new Login().execute();
         }
 
         // Setup entrance for settings page
@@ -67,20 +72,24 @@ public class MainActivity extends Activity {
                 ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
                         .hideSoftInputFromWindow(MainActivity.this.getCurrentFocus().getWindowToken(),
                                 InputMethodManager.HIDE_NOT_ALWAYS);
-
-                // Get username and password from ExitText
-                username = editTextLogin.getText().toString();
-                password = editTextPassword.getText().toString();
-
-                // Save username to SharedPreferences "code"
-                editorSpCode.putString("username", username);
-                editorSpCode.commit();
                 new Login().execute();
             }
         });
     }
 
-    private class Login extends AsyncTask<Void, Void, Integer> {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch(requestCode) {
+            case ACTIVITY_PICKDATE: {
+                boolean finishAll = data.getBooleanExtra("finishAll", false);
+                if(finishAll) finish();
+                break;
+            }
+        }
+    }
+
+    private class Login extends AsyncTask<Void, Void, Boolean> {
         // Send http request, get strResponse and check whether it was successful
         String response = "";
         ProgressDialog progressDialog = new ProgressDialog(MainActivity.this, ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
@@ -91,41 +100,62 @@ public class MainActivity extends Activity {
             progressDialog.setProgress(ProgressDialog.STYLE_SPINNER);
             progressDialog.setMessage("       正在登录");
             progressDialog.show();
+
+            // Get username and password from ExitText
+            username = editTextLogin.getText().toString();
+            password = editTextPassword.getText().toString();
+
+            // Save username to SharedPreferences "code"
+            editorSpCode.putString("username", username);
+            editorSpCode.apply();
         }
 
         @Override
-        protected Integer doInBackground(Void[] p1) {
+        protected Boolean doInBackground(Void[] p1) {
             String passwordEncoded = Common.encodeMD5(password);
-            if (passwordEncoded.equals("")) return 0;
-            Document doc;
+            if (passwordEncoded.equals("")) return false;
 
             // Cookie stuffs
             CookieManager cookieManager = new CookieManager();
             CookieHandler.setDefault(cookieManager);
             CookieStore cookieStore = cookieManager.getCookieStore();
 
-            // Connect and save the strResponse into responseDoc in date_picker to get the two parameters needed to post
+            // Connect and save response into doc in date_picker to get the two parameters needed for posting
+            Document docGet;
             try {
-                doc = Jsoup.connect(getString(R.string.urlLogin)).followRedirects(true).timeout(5000).get();
+                docGet = Jsoup.connect(getString(R.string.urlLogin)).followRedirects(true).timeout(5000).get();
             }
             catch (IOException e) {
-                return 0;
+                return false;
+            }
+            String paramExecution = docGet.select("input[name=execution]").first().attr("value");
+            String paramLt = docGet.select("input[name=lt]").first().attr("value");
+
+            // Login and get response
+            Connection post = Jsoup.connect(getString(R.string.urlLogin));
+            post.data("_eventId", "submit");
+            post.data("captcha", "null");
+            post.data("code", "");
+            post.data("execution", paramExecution);
+            post.data("lt", paramLt);
+            post.data("password", passwordEncoded);
+            post.data("phone", "");
+            post.data("username", username);
+            try {
+                response = post.post().toString();
+            }
+            catch (Exception e) {
+                return false;
             }
 
-            // Login and get strResponse
-            response = post(doc.select("input[name=execution]").first().attr("value"),
-                    doc.select("input[name=lt]").first().attr("value"),
-                    passwordEncoded);
-
             //check whether successful
-            if (response.contains("深圳实验学校一卡通管理系统")) return 1;
-            return 0;
+            return response.contains("深圳实验学校一卡通管理系统");
         }
 
         @Override
-        protected void onPostExecute(Integer loginSuccessful) {
+        protected void onPostExecute(Boolean loginSuccessful) {
             progressDialog.hide();
-            if (loginSuccessful == 1) {
+            if (loginSuccessful) {
                 // Save the valid password into SharedPreferences "code"
                 editorSpCode.putString("password", password);
                 editorSpCode.commit();
@@ -135,7 +165,7 @@ public class MainActivity extends Activity {
                 intent.putExtra("httpResponse", response);
                 intent.putExtra("username", username);
                 intent.setClass(MainActivity.this, PickDate.class);
-                startActivity(intent);
+                startActivityForResult(intent, ACTIVITY_PICKDATE);
 
                 overridePendingTransition(R.anim.slide_out_bottom, 0);
             } else {
@@ -146,21 +176,6 @@ public class MainActivity extends Activity {
                 Toast.makeText(MainActivity.this, "登录失败", Toast.LENGTH_SHORT).show();
             }
         }
-    }
-
-    private String post(String paramExecution, String paramLt, String passwordEncoded) {
-        Map<String, String> params = new HashMap<>(8);
-
-        params.put("_eventId", "submit");
-        params.put("captcha", "null");
-        params.put("code", "");
-        params.put("execution", paramExecution);
-        params.put("lt", paramLt);
-        params.put("password", passwordEncoded);
-        params.put("phone", "");
-        params.put("username", username);
-
-        return Common.sendHttpRequest(getString(R.string.urlLogin), encapsulate(params));
     }
 
     private StringBuffer encapsulate(Map<String, String> parameters) {

@@ -3,7 +3,6 @@ package org.szesmaker.ordermeal;
 import android.app.*;
 import android.content.*;
 import android.os.*;
-import android.util.Log;
 import android.view.*;
 import android.view.View.*;
 import android.widget.*;
@@ -11,7 +10,6 @@ import android.widget.DatePicker.*;
 import java.util.*;
 import org.jsoup.*;
 import org.jsoup.nodes.*;
-import org.jsoup.select.*;
 
 public class PickDate extends Activity {
 
@@ -20,7 +18,7 @@ public class PickDate extends Activity {
     private Button buttonLoad;
 
     private String username;
-    Document responseDoc;
+    Document docResponse;
     String dateSelected;
 
     SharedPreferences spMenu;
@@ -40,8 +38,8 @@ public class PickDate extends Activity {
         // Receive intent, get username and Chinese name and set it to display
         Intent intentReceived = getIntent();
         username = intentReceived.getStringExtra("username");
-        responseDoc = Jsoup.parse(intentReceived.getStringExtra("httpResponse"));
-        String chineseName = responseDoc.select("span#LblUserName").first().text();
+        docResponse = Jsoup.parse(intentReceived.getStringExtra("httpResponse"));
+        String chineseName = docResponse.select("span#LblUserName").first().text();
         chineseName = chineseName.substring(chineseName.indexOf("：") + 1);
         setTitle("欢迎, " + chineseName + "同学");
 
@@ -69,10 +67,10 @@ public class PickDate extends Activity {
         // Prevent the app from returning to the login page on back pressed
         // This can maintain the login state as long as the activity isn't manually killed
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            startActivity(intent);
+            Intent intent = new Intent();
+            intent.putExtra("finishAll", true);
+            setResult(RESULT_OK, intent);
+            finish();
             return true;
         }
         return false;
@@ -87,33 +85,36 @@ public class PickDate extends Activity {
 
     @Override public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case 1:
+            case 1: {
                 checkBalance();
                 break;
-            case 2:
+            }
+            case 2: {
                 Intent intent = new Intent();
                 intent.setClass(this, Settings.class);
                 startActivity(intent);
                 break;
-            case 3:
-                this.finish();
+            }
+            case 3: {
+                Intent intent = new Intent();
+                intent.putExtra("finishAll", false);
+                setResult(RESULT_OK, intent);
+                finish();
                 overridePendingTransition(0, R.anim.slide_in_bottom);
                 break;
+            }
         }
         return true;
     }
 
     private void checkBalance() {
-        // The problem is, if the user has never killed the activity or reboot the system,
-        // which means that s/he has never logged in twice, his/her balance will never be updated
-        // To be improved
-        String response = responseDoc.toString();
+        String response = docResponse.toString();
         if(response.equals("")) {
             Toast.makeText(this, "查询失败", Toast.LENGTH_SHORT).show();
             return;
         }
         else {
-            Toast.makeText(this, responseDoc.select("span#LblBalance").first().text(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, docResponse.select("span#LblBalance").first().text(), Toast.LENGTH_SHORT).show();
             return;
         }
     }

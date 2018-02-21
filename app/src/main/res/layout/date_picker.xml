@@ -6,7 +6,7 @@
 	android:focusableInTouchMode="true">
 
 	<LinearLayout
-		android:layout_height="match_parent"
+		android:layout_height="wrap_content"
 		android:layout_width="match_parent"
 		android:padding="15dp"
 		android:orientation="vertical"
@@ -15,7 +15,7 @@
 		<org.szesmaker.ordermeal.AdaptedDatePicker
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"
-			android:layout_marginTop="14dp"
+			android:layout_marginTop="5dp"
 			android:id="@+id/dp"
 			android:calendarViewShown="true"
 			android:spinnersShown="false"
