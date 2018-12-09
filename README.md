@@ -1,4 +1,7 @@
 # EAxT
+
+**WARNING: This project is OBSOLETED due to school system update.** 
+
 EAxT is an Android application providing meal ordering service for Shenzhen Experimental School (Senior Section).
 
 ## Feature
